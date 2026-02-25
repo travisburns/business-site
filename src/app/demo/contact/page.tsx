@@ -2,6 +2,7 @@
 import { useState, FormEvent } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
+import Link from 'next/link'
 import { leadsApi } from '../lib/api'
 import type { LeadCreateDto } from '../lib/types'
 
@@ -70,206 +71,219 @@ export default function Contact() {
     <>
       <Header />
       <main>
-        {/* Hero Section */}
-        <section className="bg-secondary text-white py-16">
+
+        {/* Hero */}
+        <section className="page-hero">
           <div className="container">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
-            <p className="text-xl text-gray-200">Get a free estimate for your project</p>
+            <div className="page-hero-breadcrumb">
+              <Link href="/demo">Home</Link>
+              <span className="sep">/</span>
+              <span>Contact</span>
+            </div>
+            <div className="section-label">Free Estimates</div>
+            <h1>Contact Us</h1>
+            <p className="page-hero-sub">Get a free estimate for your project</p>
           </div>
         </section>
 
         {/* Contact Section */}
-        <section className="section-padding">
+        <section className="cnt-section">
           <div className="container">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-              {/* Contact Info */}
+            <div className="cnt-grid">
+
+              {/* Left — contact info */}
               <div>
-                <h2 className="text-3xl font-bold mb-6">Get in Touch</h2>
-                <p className="text-gray-700 mb-8">
-                  Ready to start your construction or remodeling project? Contact us today for a free estimate. We'll discuss your project needs and provide a detailed quote.
-                </p>
+                <div className="cnt-info-header">
+                  <div className="section-label" style={{ marginBottom: '1rem' }}>Reach Us Directly</div>
+                  <h2>Get in Touch</h2>
+                  <p>
+                    Ready to start your construction or remodeling project? Contact us today for a
+                    free estimate. We&apos;ll discuss your project needs and provide a detailed quote.
+                  </p>
+                </div>
 
-                <div className="space-y-8">
-                  <div>
-                    <h3 className="font-bold text-xl mb-2">Phone</h3>
-                    <a href="tel:5415254133" className="text-primary text-lg hover:text-primary-dark">
-                      (541) 525-4133
-                    </a>
+                <div className="cnt-info-items">
+                  <div className="cnt-info-item">
+                    <div className="cnt-info-label">Phone</div>
+                    <div className="cnt-info-value">
+                      <a href="tel:5415254133">(541) 525-4133</a>
+                    </div>
                   </div>
 
-                  <div>
-                    <h3 className="font-bold text-xl mb-2">Email</h3>
-                    <a href="mailto:info@hallemanconstructionllc.com" className="text-primary text-lg hover:text-primary-dark">
-                      info@hallemanconstructionllc.com
-                    </a>
+                  <div className="cnt-info-item">
+                    <div className="cnt-info-label">Email</div>
+                    <div className="cnt-info-value">
+                      <a href="mailto:info@hallemanconstructionllc.com">
+                        info@hallemanconstructionllc.com
+                      </a>
+                    </div>
                   </div>
 
-                  <div>
-                    <h3 className="font-bold text-xl mb-2">Service Areas</h3>
-                    <p className="text-gray-700">Eugene, Cottage Grove, Veneta, Coburg, and throughout Lane County, Oregon</p>
+                  <div className="cnt-info-item">
+                    <div className="cnt-info-label">Service Areas</div>
+                    <div className="cnt-info-value">Lane County, Oregon</div>
+                    <div className="cnt-info-sub">
+                      Eugene, Cottage Grove, Veneta, Coburg, and throughout Lane County, Oregon
+                    </div>
                   </div>
 
-                  <div>
-                    <h3 className="font-bold text-xl mb-2">License & Insurance</h3>
-                    <p className="text-gray-700">Licensed, Bonded & Insured<br />Oregon CCB License</p>
+                  <div className="cnt-info-item">
+                    <div className="cnt-info-label">License &amp; Insurance</div>
+                    <div className="cnt-info-value">Licensed, Bonded &amp; Insured</div>
+                    <div className="cnt-info-sub">Oregon CCB License</div>
                   </div>
                 </div>
               </div>
 
-              {/* Contact Form */}
-              <div className="bg-white p-8 rounded-lg shadow-lg">
-                <h2 className="text-2xl font-bold mb-6">Request a Free Estimate</h2>
+              {/* Right — form */}
+              <div className="cnt-form-card">
+                <div className="cnt-form-title">Request a Free Estimate</div>
 
                 {submitSuccess ? (
-                  <div className="bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-lg">
-                    <h3 className="font-bold mb-2">Thank you!</h3>
-                    <p>We've received your request and will contact you within 24 hours.</p>
+                  <div className="cnt-success">
+                    <h3>Thank you!</h3>
+                    <p>We&apos;ve received your request and will contact you within 24 hours.</p>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-6">
+                  <form onSubmit={handleSubmit}>
                     {submitError && (
-                      <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
-                        {submitError}
-                      </div>
+                      <div className="cnt-error">{submitError}</div>
                     )}
 
-                    <div>
-                      <label className="block font-semibold mb-1">Full Name *</label>
-                      <input
-                        type="text"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
+                    <div className="cnt-fields">
+                      <div className="svc-field">
+                        <label>Full Name *</label>
+                        <input
+                          type="text"
+                          name="fullName"
+                          value={formData.fullName}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block font-semibold mb-1">Email *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
+                      <div className="svc-field">
+                        <label>Email *</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block font-semibold mb-1">Phone *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
+                      <div className="svc-field">
+                        <label>Phone *</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block font-semibold mb-1">Project Type *</label>
-                      <select
-                        name="projectType"
-                        value={formData.projectType}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      <div className="svc-field">
+                        <label>Project Type *</label>
+                        <select
+                          name="projectType"
+                          value={formData.projectType}
+                          onChange={handleChange}
+                          required
+                        >
+                          <option value="">Select a project type</option>
+                          <option value="tile">Tile Installation</option>
+                          <option value="kitchen">Kitchen Remodeling</option>
+                          <option value="bathroom">Bathroom Renovation</option>
+                          <option value="deck">Deck Construction</option>
+                          <option value="fence">Fence Installation</option>
+                          <option value="patio">Patio Cover</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+
+                      <div className="svc-field">
+                        <label>Location *</label>
+                        <select
+                          name="location"
+                          value={formData.location}
+                          onChange={handleChange}
+                          required
+                        >
+                          <option value="">Select your location</option>
+                          <option value="eugene">Eugene</option>
+                          <option value="cottage-grove">Cottage Grove</option>
+                          <option value="veneta">Veneta</option>
+                          <option value="coburg">Coburg</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+
+                      <div className="svc-field">
+                        <label>Budget Range *</label>
+                        <select
+                          name="budgetRange"
+                          value={formData.budgetRange}
+                          onChange={handleChange}
+                          required
+                        >
+                          <option value="">Select budget range</option>
+                          <option value="under-5k">Under $5,000</option>
+                          <option value="5k-10k">$5,000 - $10,000</option>
+                          <option value="10k-20k">$10,000 - $20,000</option>
+                          <option value="20k-50k">$20,000 - $50,000</option>
+                          <option value="50k-100k">$50,000 - $100,000</option>
+                          <option value="over-100k">Over $100,000</option>
+                          <option value="not-sure">Not Sure</option>
+                        </select>
+                      </div>
+
+                      <div className="svc-field">
+                        <label>Timeline *</label>
+                        <select
+                          name="timeline"
+                          value={formData.timeline}
+                          onChange={handleChange}
+                          required
+                        >
+                          <option value="">Select timeline</option>
+                          <option value="asap">ASAP</option>
+                          <option value="1-3months">1-3 Months</option>
+                          <option value="3-6months">3-6 Months</option>
+                          <option value="6-12months">6-12 Months</option>
+                          <option value="planning">Just Planning</option>
+                        </select>
+                      </div>
+
+                      <div className="svc-field">
+                        <label>Project Description</label>
+                        <textarea
+                          name="projectDescription"
+                          value={formData.projectDescription}
+                          onChange={handleChange}
+                          rows={4}
+                          placeholder="Tell us about your project..."
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="svc-submit"
+                        style={{ opacity: isSubmitting ? 0.5 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
                       >
-                        <option value="">Select a project type</option>
-                        <option value="tile">Tile Installation</option>
-                        <option value="kitchen">Kitchen Remodeling</option>
-                        <option value="bathroom">Bathroom Renovation</option>
-                        <option value="deck">Deck Construction</option>
-                        <option value="fence">Fence Installation</option>
-                        <option value="patio">Patio Cover</option>
-                        <option value="other">Other</option>
-                      </select>
+                        {isSubmitting ? 'Submitting...' : 'Get Free Estimate'}
+                      </button>
                     </div>
-
-                    <div>
-                      <label className="block font-semibold mb-1">Location *</label>
-                      <select
-                        name="location"
-                        value={formData.location}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value="">Select your location</option>
-                        <option value="eugene">Eugene</option>
-                        <option value="cottage-grove">Cottage Grove</option>
-                        <option value="veneta">Veneta</option>
-                        <option value="coburg">Coburg</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold mb-1">Budget Range *</label>
-                      <select
-                        name="budgetRange"
-                        value={formData.budgetRange}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value="">Select budget range</option>
-                        <option value="under-5k">Under $5,000</option>
-                        <option value="5k-10k">$5,000 - $10,000</option>
-                        <option value="10k-20k">$10,000 - $20,000</option>
-                        <option value="20k-50k">$20,000 - $50,000</option>
-                        <option value="50k-100k">$50,000 - $100,000</option>
-                        <option value="over-100k">Over $100,000</option>
-                        <option value="not-sure">Not Sure</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold mb-1">Timeline *</label>
-                      <select
-                        name="timeline"
-                        value={formData.timeline}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value="">Select timeline</option>
-                        <option value="asap">ASAP</option>
-                        <option value="1-3months">1-3 Months</option>
-                        <option value="3-6months">3-6 Months</option>
-                        <option value="6-12months">6-12 Months</option>
-                        <option value="planning">Just Planning</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold mb-1">Project Description</label>
-                      <textarea
-                        name="projectDescription"
-                        value={formData.projectDescription}
-                        onChange={handleChange}
-                        rows={4}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                        placeholder="Tell us about your project..."
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? 'Submitting...' : 'Get Free Estimate'}
-                    </button>
                   </form>
                 )}
               </div>
+
             </div>
           </div>
         </section>
+
       </main>
       <Footer />
     </>
