@@ -45,7 +45,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 function generateJsonLd(page: SeoPage) {
   const schemas = []
 
-  // LocalBusiness schema
   schemas.push({
     '@context': 'https://schema.org',
     '@type': 'HomeAndConstructionBusiness',
@@ -69,7 +68,6 @@ function generateJsonLd(page: SeoPage) {
     priceRange: '$$',
   })
 
-  // Service schema
   schemas.push({
     '@context': 'https://schema.org',
     '@type': 'Service',
@@ -87,7 +85,6 @@ function generateJsonLd(page: SeoPage) {
     serviceType: page.service,
   })
 
-  // FAQ schema
   if (page.faq.length > 0) {
     schemas.push({
       '@context': 'https://schema.org',
@@ -106,6 +103,14 @@ function generateJsonLd(page: SeoPage) {
   return schemas
 }
 
+const SIDEBAR_SERVICES = [
+  { label: 'Tile Design & Installation', href: '/demo/services/tile-installation-eugene' },
+  { label: 'Kitchen Remodeling', href: '/demo/services/kitchen-remodeling-eugene' },
+  { label: 'Bathroom Renovation', href: '/demo/services/bathroom-renovation-eugene' },
+  { label: 'Decks & Fencing', href: '/demo/services/deck-builder-eugene' },
+  { label: 'Patio Covers', href: '/demo/services/patio-cover-eugene' },
+]
+
 export default async function ServicePage({ params }: PageProps) {
   const { slug } = await params
   const page = getSeoPageBySlug(slug)
@@ -114,7 +119,6 @@ export default async function ServicePage({ params }: PageProps) {
   const schemas = generateJsonLd(page)
   const contentParagraphs = page.content.split('\n\n')
 
-  // Find related pages (same service, different cities OR same city, different services)
   const relatedPages = seoPages.filter(
     (p) =>
       p.slug !== page.slug &&
@@ -126,7 +130,6 @@ export default async function ServicePage({ params }: PageProps) {
 
   return (
     <>
-      {/* JSON-LD Schema Markup */}
       {schemas.map((schema, i) => (
         <script
           key={i}
@@ -137,83 +140,127 @@ export default async function ServicePage({ params }: PageProps) {
 
       <Header />
       <main>
-        {/* Hero Section */}
-        <section className="bg-secondary text-white py-16">
+
+        {/* Hero */}
+        <section className="page-hero">
           <div className="container">
-            <nav className="text-sm text-gray-300 mb-4">
-              <Link href="/" className="hover:text-white">Home</Link>
-              <span className="mx-2">/</span>
-              <Link href="/services" className="hover:text-white">Services</Link>
-              <span className="mx-2">/</span>
-              <span className="text-white">{page.service} — {page.city}</span>
+            <nav className="page-hero-breadcrumb">
+              <Link href="/demo">Home</Link>
+              <span className="sep">/</span>
+              <Link href="/demo/services">Services</Link>
+              <span className="sep">/</span>
+              <span>{page.service} — {page.city}</span>
             </nav>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{page.h1}</h1>
-            <p className="text-xl text-gray-200 max-w-2xl">{page.heroSubtitle}</p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-4">
-              <Link href="/contact" className="btn-primary inline-block text-center">
-                Get Free Estimate
-              </Link>
-              <a href="tel:5415254133" className="btn-secondary inline-block text-center">
-                Call (541) 525-4133
-              </a>
+            <div className="section-label">{page.service}</div>
+            <h1>{page.h1}</h1>
+            <p className="page-hero-sub">{page.heroSubtitle}</p>
+            <div className="page-hero-ctas">
+              <Link href="/demo/contact" className="btn-primary">Get Free Estimate</Link>
+              <a href="tel:5415254133" className="btn-secondary">Call (541) 525-4133</a>
             </div>
           </div>
         </section>
 
-        {/* Intro + Features */}
-        <section className="section-padding">
+        {/* Two-column layout */}
+        <section className="svc-layout-section">
           <div className="container">
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                <div className="lg:col-span-2">
-                  <h2 className="text-3xl font-bold mb-6 text-secondary">
-                    {page.service} in {page.city}
-                  </h2>
-                  <p className="text-gray-700 text-lg leading-relaxed mb-8">{page.intro}</p>
+            <div className="svc-layout">
 
-                  {contentParagraphs.map((paragraph, i) => (
-                    <p key={i} className="text-gray-600 leading-relaxed mb-4">{paragraph}</p>
-                  ))}
-                </div>
+              {/* Main content */}
+              <div className="svc-main">
+                <h2 className="svc-content-title">
+                  {page.service} in {page.city}
+                </h2>
+                <p className="svc-body-text" style={{ fontSize: '1rem', marginBottom: '1.25rem' }}>
+                  {page.intro}
+                </p>
 
-                <div>
-                  <div className="bg-gray-50 p-6 sticky top-4">
-                    <h3 className="font-bold text-lg text-secondary mb-4">What We Offer</h3>
-                    <ul className="space-y-3">
-                      {page.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2 text-gray-700">
-                          <span className="text-primary font-bold mt-0.5">&#10003;</span>
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <p className="text-sm text-gray-500 mb-2">Serving {page.city} and:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {page.nearbyAreas.map((area) => (
-                          <span key={area} className="text-xs bg-white px-2 py-1 border border-gray-200 text-gray-600">
-                            {area}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                {/* What We Offer — dark card */}
+                <div className="svc-dark-card">
+                  <div className="svc-dark-card-label">◆ What We Offer</div>
+                  <h3>Our {page.service} Services</h3>
+                  <ul className="svc-features-grid">
+                    {page.features.map((feature, i) => (
+                      <li key={i}>{feature}</li>
+                    ))}
+                  </ul>
+                  <div className="svc-serving-label">Serving {page.city} and nearby areas</div>
+                  <div className="svc-area-pills">
+                    {page.nearbyAreas.map((area) => (
+                      <span key={area} className="svc-area-pill">{area}</span>
+                    ))}
                   </div>
                 </div>
+
+                {/* Content paragraphs */}
+                {contentParagraphs.map((paragraph, i) => (
+                  <p key={i} className="svc-body-text">{paragraph}</p>
+                ))}
               </div>
+
+              {/* Sidebar */}
+              <aside className="svc-sidebar">
+                {/* Estimate card */}
+                <div className="svc-estimate-card">
+                  <h3>Request A Free Estimate</h3>
+                  <p>Tell us about your project</p>
+                  <form action="/demo/contact" method="GET">
+                    <div className="svc-field">
+                      <label htmlFor="sf-fname">First Name</label>
+                      <input type="text" id="sf-fname" name="firstName" placeholder="First Name" />
+                    </div>
+                    <div className="svc-field">
+                      <label htmlFor="sf-lname">Last Name</label>
+                      <input type="text" id="sf-lname" name="lastName" placeholder="Last Name" />
+                    </div>
+                    <div className="svc-field">
+                      <label htmlFor="sf-phone">Phone</label>
+                      <input type="tel" id="sf-phone" name="phone" placeholder="(541) 000-0000" />
+                    </div>
+                    <div className="svc-field">
+                      <label htmlFor="sf-email">E-Mail Address</label>
+                      <input type="email" id="sf-email" name="email" placeholder="you@email.com" />
+                    </div>
+                    <div className="svc-field">
+                      <label htmlFor="sf-message">How can we help?</label>
+                      <textarea id="sf-message" name="message" rows={3} placeholder="Describe your project..." />
+                    </div>
+                    <button type="submit" className="svc-submit">Submit Request →</button>
+                  </form>
+                  <div className="svc-submit-alt">
+                    Or call us: <a href="tel:5415254133">(541) 525-4133</a>
+                  </div>
+                </div>
+
+                {/* Service nav */}
+                <div className="svc-nav-card">
+                  <h4>All Services</h4>
+                  <ul className="svc-nav-list">
+                    {SIDEBAR_SERVICES.map((s) => (
+                      <li key={s.href} className="svc-nav-item">
+                        <Link href={s.href}>{s.label}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </aside>
+
             </div>
           </div>
         </section>
 
         {/* Estimator */}
         {page.estimatorType && (
-          <section className="section-padding bg-gray-50">
+          <section className="svc-estimator-section">
             <div className="container">
-              <div className="max-w-2xl mx-auto text-center mb-8">
-                <h2 className="text-3xl font-bold mb-4 text-secondary">
-                  Get an Instant {page.service} Estimate
-                </h2>
-                <p className="text-gray-600">
-                  Use our free estimator tool to get an instant cost range for your {page.service.toLowerCase()} project in {page.city}. Based on current Lane County contractor rates.
+              <div className="section-top">
+                <div className="section-label" style={{ justifyContent: 'center', marginBottom: '0.75rem' }}>
+                  Instant Pricing
+                </div>
+                <h2>Get an Instant {page.service} Estimate</h2>
+                <p>
+                  Use our free estimator tool to get an instant cost range for your{' '}
+                  {page.service.toLowerCase()} project in {page.city}. Based on current Lane County contractor rates.
                 </p>
               </div>
               <ServiceEstimator defaultType={page.estimatorType} />
@@ -221,19 +268,18 @@ export default async function ServicePage({ params }: PageProps) {
           </section>
         )}
 
-        {/* FAQ Section */}
+        {/* FAQ */}
         {page.faq.length > 0 && (
-          <section className="section-padding">
+          <section className="svc-faq-section">
             <div className="container">
-              <div className="max-w-3xl mx-auto">
-                <h2 className="text-3xl font-bold mb-8 text-secondary">
-                  Frequently Asked Questions
-                </h2>
-                <div className="space-y-6">
+              <div style={{ maxWidth: '760px', margin: '0 auto' }}>
+                <div className="section-label">Common Questions</div>
+                <h2>Frequently Asked Questions</h2>
+                <div>
                   {page.faq.map((item, i) => (
-                    <div key={i} className="border-b border-gray-200 pb-6">
-                      <h3 className="font-bold text-lg text-gray-900 mb-2">{item.question}</h3>
-                      <p className="text-gray-600 leading-relaxed">{item.answer}</p>
+                    <div key={i} className="svc-faq-item">
+                      <h3>{item.question}</h3>
+                      <p>{item.answer}</p>
                     </div>
                   ))}
                 </div>
@@ -242,22 +288,23 @@ export default async function ServicePage({ params }: PageProps) {
           </section>
         )}
 
-        {/* Related Services / Cities */}
+        {/* Related Services */}
         {relatedPages.length > 0 && (
-          <section className="section-padding bg-gray-50">
+          <section className="svc-related-section">
             <div className="container">
-              <h2 className="text-2xl font-bold mb-6 text-secondary text-center">
-                Related Services
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              <div className="section-label" style={{ justifyContent: 'center', marginBottom: '0.75rem' }}>
+                More Services
+              </div>
+              <h2>Related Services</h2>
+              <div className="svc-related-grid">
                 {relatedPages.map((related) => (
                   <Link
                     key={related.slug}
                     href={`/services/${related.slug}`}
-                    className="bg-white p-4 border border-gray-200 hover:border-primary hover:shadow-md transition-all"
+                    className="svc-related-link"
                   >
-                    <span className="font-semibold text-secondary block">{related.service}</span>
-                    <span className="text-sm text-gray-500">{related.city}, OR</span>
+                    <span className="svc-related-service">{related.service}</span>
+                    <span className="svc-related-city">{related.city}, OR</span>
                   </Link>
                 ))}
               </div>
@@ -265,25 +312,24 @@ export default async function ServicePage({ params }: PageProps) {
           </section>
         )}
 
-        {/* CTA Section */}
-        <section className="section-padding bg-secondary text-white">
-          <div className="container text-center">
-            <h2 className="text-3xl font-bold mb-4">
-              Ready to Start Your {page.service} Project?
-            </h2>
-            <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
-              Contact us today for a free estimate on your {page.service.toLowerCase()} project in {page.city}. Licensed, bonded, and insured.
+        {/* CTA */}
+        <section className="svc-cta-section">
+          <div className="container">
+            <div className="section-label" style={{ justifyContent: 'center', marginBottom: '1.25rem' }}>
+              Ready to Start
+            </div>
+            <h2>Ready to Start Your {page.service} Project?</h2>
+            <p>
+              Contact us today for a free estimate on your {page.service.toLowerCase()} project
+              in {page.city}. Licensed, bonded, and insured.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/contact" className="btn-primary">
-                Get Free Estimate
-              </Link>
-              <a href="tel:5415254133" className="bg-white text-secondary font-bold px-8 py-3 hover:bg-gray-100 transition-colors inline-block">
-                Call (541) 525-4133
-              </a>
+            <div className="svc-cta-buttons">
+              <Link href="/demo/contact" className="btn-primary">Get Free Estimate</Link>
+              <a href="tel:5415254133" className="btn-phone-large">(541) 525-4133</a>
             </div>
           </div>
         </section>
+
       </main>
       <Footer />
     </>

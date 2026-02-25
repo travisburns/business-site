@@ -52,70 +52,145 @@ const CITIES = [
   { name: 'Coburg', key: 'coburg' },
 ]
 
+const SIDEBAR_SERVICES = [
+  { label: 'Tile Design & Installation', href: '/demo/services/tile-installation-eugene' },
+  { label: 'Kitchen Remodeling', href: '/demo/services/kitchen-remodeling-eugene' },
+  { label: 'Bathroom Renovation', href: '/demo/services/bathroom-renovation-eugene' },
+  { label: 'Decks & Fencing', href: '/demo/services/deck-builder-eugene' },
+  { label: 'Patio Covers', href: '/demo/services/patio-cover-eugene' },
+]
+
 export default function Services() {
   return (
     <>
       <Header />
       <main>
-        {/* Hero Section */}
-        <section className="bg-secondary text-white py-16">
-          <div className="container">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Services</h1>
-            <p className="text-xl text-gray-200">Professional construction and remodeling throughout Eugene and Lane County</p>
-          </div>
-        </section>
 
-        {/* Services Grid */}
-        <section className="section-padding">
+        {/* Hero */}
+        <section className="page-hero">
           <div className="container">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              {SERVICE_CARDS.map((card) => (
-                <div key={card.slug} className="bg-white p-8 shadow-lg border border-gray-200">
-                  <h2 className="text-2xl font-bold mb-4 text-secondary">{card.service}</h2>
-                  <p className="text-gray-700 mb-4">{card.description}</p>
-                  <ul className="space-y-2 mb-6 text-gray-600">
-                    {card.features.map((feature) => (
-                      <li key={feature}>&#10003; {feature}</li>
-                    ))}
-                  </ul>
-                  <div className="flex flex-wrap gap-2">
-                    {CITIES.map((city) => {
-                      const slug = `${card.slug}-${city.key}`
-                      const exists = seoPages.some(p => p.slug === slug)
-                      if (!exists) return null
-                      return (
-                        <Link
-                          key={city.key}
-                          href={`/services/${slug}`}
-                          className="text-sm px-3 py-1 bg-gray-100 text-gray-700 hover:bg-primary hover:text-white transition-colors"
-                        >
-                          {city.name}
-                        </Link>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
+            <div className="page-hero-breadcrumb">
+              <Link href="/demo">Home</Link>
+              <span className="sep">/</span>
+              <span>Services</span>
+            </div>
+            <div className="section-label">What We Do</div>
+            <h1>Our Services</h1>
+            <p className="page-hero-sub">
+              Professional construction and remodeling throughout Eugene and Lane County.
+              Licensed, bonded, and insured with 15+ years of experience.
+            </p>
+            <div className="page-hero-ctas">
+              <Link href="/demo/contact" className="btn-primary">Get Free Estimate</Link>
+              <a href="tel:5415254133" className="btn-secondary">Call (541) 525-4133</a>
             </div>
           </div>
         </section>
 
-        {/* All Service Areas */}
-        <section className="section-padding bg-gray-50">
+        {/* Two-column: cards + sidebar */}
+        <section className="svc-layout-section">
           <div className="container">
-            <h2 className="text-3xl font-bold mb-8 text-secondary text-center">Service Areas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-5xl mx-auto">
+            <div className="svc-layout">
+
+              {/* Main — service cards */}
+              <div className="svc-main">
+                <div className="svc-cards-grid">
+                  {SERVICE_CARDS.map((card) => (
+                    <div key={card.slug} className="svc-listing-card">
+                      <h2>{card.service}</h2>
+                      <p>{card.description}</p>
+                      <ul className="svc-listing-features">
+                        {card.features.map((feature) => (
+                          <li key={feature}>{feature}</li>
+                        ))}
+                      </ul>
+                      <div className="svc-city-pills">
+                        {CITIES.map((city) => {
+                          const slug = `${card.slug}-${city.key}`
+                          const exists = seoPages.some(p => p.slug === slug)
+                          if (!exists) return null
+                          return (
+                            <Link
+                              key={city.key}
+                              href={`/services/${slug}`}
+                              className="svc-city-pill"
+                            >
+                              {city.name}
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sidebar */}
+              <aside className="svc-sidebar">
+                {/* Estimate card */}
+                <div className="svc-estimate-card">
+                  <h3>Request A Free Estimate</h3>
+                  <p>Tell us about your project</p>
+                  <form action="/demo/contact" method="GET">
+                    <div className="svc-field">
+                      <label htmlFor="s-fname">First Name</label>
+                      <input type="text" id="s-fname" name="firstName" placeholder="First Name" />
+                    </div>
+                    <div className="svc-field">
+                      <label htmlFor="s-lname">Last Name</label>
+                      <input type="text" id="s-lname" name="lastName" placeholder="Last Name" />
+                    </div>
+                    <div className="svc-field">
+                      <label htmlFor="s-phone">Phone</label>
+                      <input type="tel" id="s-phone" name="phone" placeholder="(541) 000-0000" />
+                    </div>
+                    <div className="svc-field">
+                      <label htmlFor="s-email">E-Mail Address</label>
+                      <input type="email" id="s-email" name="email" placeholder="you@email.com" />
+                    </div>
+                    <div className="svc-field">
+                      <label htmlFor="s-message">How can we help?</label>
+                      <textarea id="s-message" name="message" rows={3} placeholder="Describe your project..." />
+                    </div>
+                    <button type="submit" className="svc-submit">Submit Request →</button>
+                  </form>
+                  <div className="svc-submit-alt">
+                    Or call us: <a href="tel:5415254133">(541) 525-4133</a>
+                  </div>
+                </div>
+
+                {/* Service nav */}
+                <div className="svc-nav-card">
+                  <h4>Our Services</h4>
+                  <ul className="svc-nav-list">
+                    {SIDEBAR_SERVICES.map((s) => (
+                      <li key={s.href} className="svc-nav-item">
+                        <Link href={s.href}>{s.label}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </aside>
+
+            </div>
+          </div>
+        </section>
+
+        {/* Service Areas */}
+        <section className="svc-areas-section">
+          <div className="container">
+            <div className="section-label" style={{ justifyContent: 'center', marginBottom: '0.75rem' }}>Where We Work</div>
+            <h2>Service Areas</h2>
+            <div className="svc-areas-cols">
               {CITIES.map((city) => (
-                <div key={city.key}>
-                  <h3 className="font-bold text-lg text-secondary mb-3">{city.name}</h3>
-                  <ul className="space-y-2">
+                <div key={city.key} className="svc-area-col">
+                  <h3>{city.name}</h3>
+                  <ul>
                     {seoPages
                       .filter(p => p.slug.endsWith(`-${city.key}`) && !['home-remodeling-lane-county', 'licensed-contractor-eugene', 'outdoor-living-eugene'].includes(p.slug))
                       .map(p => (
                         <li key={p.slug}>
-                          <Link href={`/services/${p.slug}`} className="text-sm text-gray-600 hover:text-primary transition-colors">
-                            {p.service}
-                          </Link>
+                          <Link href={`/services/${p.slug}`}>{p.service}</Link>
                         </li>
                       ))
                     }
@@ -126,46 +201,40 @@ export default function Services() {
           </div>
         </section>
 
-        {/* Additional Pages */}
-        <section className="section-padding">
+        {/* More Resources */}
+        <section className="svc-resources-section">
           <div className="container">
-            <div className="max-w-3xl mx-auto">
-              <h2 className="text-2xl font-bold mb-6 text-secondary text-center">More Resources</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Link href="/services/home-remodeling-lane-county" className="p-4 bg-gray-50 border border-gray-200 hover:border-primary transition-colors text-center">
-                  <span className="font-semibold text-secondary block">Home Remodeling</span>
-                  <span className="text-sm text-gray-500">Lane County</span>
-                </Link>
-                <Link href="/services/licensed-contractor-eugene" className="p-4 bg-gray-50 border border-gray-200 hover:border-primary transition-colors text-center">
-                  <span className="font-semibold text-secondary block">Licensed Contractor</span>
-                  <span className="text-sm text-gray-500">Eugene, OR</span>
-                </Link>
-                <Link href="/services/outdoor-living-eugene" className="p-4 bg-gray-50 border border-gray-200 hover:border-primary transition-colors text-center">
-                  <span className="font-semibold text-secondary block">Outdoor Living</span>
-                  <span className="text-sm text-gray-500">Eugene, OR</span>
-                </Link>
-              </div>
+            <h2>More Resources</h2>
+            <div className="svc-resources-grid">
+              <Link href="/services/home-remodeling-lane-county" className="svc-resource-link">
+                <span className="svc-resource-name">Home Remodeling</span>
+                <span className="svc-resource-loc">Lane County</span>
+              </Link>
+              <Link href="/services/licensed-contractor-eugene" className="svc-resource-link">
+                <span className="svc-resource-name">Licensed Contractor</span>
+                <span className="svc-resource-loc">Eugene, OR</span>
+              </Link>
+              <Link href="/services/outdoor-living-eugene" className="svc-resource-link">
+                <span className="svc-resource-name">Outdoor Living</span>
+                <span className="svc-resource-loc">Eugene, OR</span>
+              </Link>
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="section-padding bg-secondary text-white">
-          <div className="container text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
-              Contact us today for a free estimate on your construction or remodeling project.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/contact" className="btn-primary">
-                Get Free Estimate
-              </Link>
-              <a href="tel:5415254133" className="bg-white text-secondary font-bold px-8 py-3 hover:bg-gray-100 transition-colors inline-block">
-                Call (541) 525-4133
-              </a>
+        {/* CTA */}
+        <section className="svc-cta-section">
+          <div className="container">
+            <div className="section-label" style={{ justifyContent: 'center', marginBottom: '1.25rem' }}>Ready to Start</div>
+            <h2>Ready to Get Started?</h2>
+            <p>Contact us today for a free estimate on your construction or remodeling project.</p>
+            <div className="svc-cta-buttons">
+              <Link href="/demo/contact" className="btn-primary">Get Free Estimate</Link>
+              <a href="tel:5415254133" className="btn-phone-large">(541) 525-4133</a>
             </div>
           </div>
         </section>
+
       </main>
       <Footer />
     </>
