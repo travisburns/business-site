@@ -2011,6 +2011,123 @@
   flex-wrap: wrap;
 }
 
+/* ============================================
+   GALLERY PAGE
+   ============================================ */
+
+.glr-intro {
+  background: #111111;
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.glr-intro h2 {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-size: 3rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.glr-intro p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;
+  max-width: 680px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+.glr-grid-section {
+  background: #0d0d0d;
+  padding: 4rem 0;
+}
+
+.glr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.glr-card {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.glr-card:hover {
+  border-color: rgba(34, 211, 238, 0.25);
+  transform: translateY(-3px);
+}
+
+.glr-card-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(135deg, #1a2535 0%, #0f1a25 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.12);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  overflow: hidden;
+  position: relative;
+}
+
+.glr-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.glr-card-info {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glr-card-title {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+  margin-bottom: 0.2rem;
+}
+
+.glr-card-loc {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.glr-cta-note {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 900px) {
+  .glr-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .glr-grid {
+    grid-template-columns: 1fr;
+  }
+  .glr-intro h2 {
+    font-size: 2.25rem;
+  }
+}
+
 /* Responsive adjustments for services pages */
 @media (max-width: 1024px) {
   .svc-layout {
