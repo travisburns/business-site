@@ -8,8 +8,8 @@
 }
 
 /* === BASE === */
-body {
-  font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+.demo-root {
+  font-family: var(--font-barlow), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #ffffff;
   background: #0f0f0f;
   line-height: 1.6;
@@ -58,7 +58,7 @@ body {
 }
 
 .logo h1 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 1.25rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -179,7 +179,7 @@ body {
   color: #0a0a0a;
   border: none;
   padding: 0.875rem 2rem;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 0.9rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -200,7 +200,7 @@ body {
   color: #22d3ee;
   border: 1px solid #22d3ee;
   padding: 0.875rem 2rem;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 0.9rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -220,7 +220,7 @@ body {
   color: #22d3ee;
   border: 1px solid #22d3ee;
   padding: 0.6rem 1.25rem;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -278,7 +278,7 @@ body {
 }
 
 .hero-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 5rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -289,7 +289,7 @@ body {
 }
 
 .hero-subtitle {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 1.1rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -353,7 +353,7 @@ body {
 }
 
 .estimate-card-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 1.75rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -391,7 +391,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #ffffff;
   padding: 0.7rem 1rem;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-barlow), sans-serif;
   font-size: 0.9rem;
   outline: none;
   transition: border-color 0.3s ease;
@@ -419,7 +419,7 @@ body {
   color: #0a0a0a;
   border: none;
   padding: 1rem;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 0.9rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -463,7 +463,7 @@ body {
 }
 
 .section-header h2 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 3rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -493,7 +493,7 @@ body {
 }
 
 .services-section-top h2 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 3.25rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -544,7 +544,7 @@ body {
 }
 
 .featured-service-content h3 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 2.75rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -555,7 +555,7 @@ body {
 }
 
 .featured-service-tag {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -612,7 +612,7 @@ body {
 }
 
 .service-icon-label {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -647,7 +647,7 @@ body {
 }
 
 .service-card h3 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 1.4rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -695,7 +695,7 @@ body {
 }
 
 .why-choose-text h2 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 3rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -727,7 +727,7 @@ body {
 }
 
 .feature-text h3 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 1.1rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -778,7 +778,7 @@ body {
 }
 
 .gallery-section-top h2 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 3.25rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -836,7 +836,7 @@ body {
 }
 
 .gallery-info h4 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 1.1rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -896,7 +896,7 @@ body {
 }
 
 .area-card h3 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 1.75rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -921,7 +921,7 @@ body {
 }
 
 .cta-content h2 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 3.75rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -952,7 +952,7 @@ body {
   background: #22d3ee;
   color: #0a0a0a;
   padding: 1rem 2.5rem;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 1rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -989,7 +989,7 @@ body {
 
 .footer-column h3,
 .footer-column h4 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -1056,7 +1056,7 @@ body {
 }
 
 .footer-brand-name {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-barlow-condensed), sans-serif;
   font-size: 0.65rem;
   font-weight: 800;
   text-transform: uppercase;
