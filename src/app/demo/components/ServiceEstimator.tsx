@@ -39,22 +39,23 @@ export default function ServiceEstimator({ defaultType }: { defaultType: string 
     setCalculated(true)
   }
 
+  const fillPct = rates.unit !== 'project'
+    ? ((size - rates.minSize) / (rates.maxSize - rates.minSize)) * 100
+    : 0
+
   return (
-    <div className="max-w-xl mx-auto bg-white p-8 shadow-lg border border-gray-200">
-      <h3 className="font-bold text-lg text-center mb-6">{rates.label} Cost Estimator</h3>
+    <div className="est-card">
+      <div className="est-title">{rates.label} Cost Estimator</div>
 
       {rates.unit !== 'project' && (
-        <div className="mb-6">
-          <div className="flex justify-between items-baseline mb-2">
-            <label className="font-semibold text-gray-700">Project Size</label>
-            <span className="bg-[#2c3e50] text-white px-3 py-1 text-sm font-bold">{size} {rates.unit}</span>
+        <div className="est-section">
+          <div className="est-label-row">
+            <span className="est-label">Project Size</span>
+            <span className="est-badge">{size} {rates.unit}</span>
           </div>
-          <div className="relative w-full h-8 flex items-center">
-            <div className="absolute left-0 right-0 h-1.5 bg-gray-200 rounded-full" />
-            <div
-              className="absolute left-0 h-1.5 bg-[#d4662a] rounded-full"
-              style={{ width: `${((size - rates.minSize) / (rates.maxSize - rates.minSize)) * 100}%` }}
-            />
+          <div className="est-slider-wrap">
+            <div className="est-track-bg" />
+            <div className="est-track-fill" style={{ width: `${fillPct}%` }} />
             <input
               type="range"
               min={rates.minSize}
@@ -62,32 +63,30 @@ export default function ServiceEstimator({ defaultType }: { defaultType: string 
               step={rates.step}
               value={size}
               onChange={(e) => { setSize(Number(e.target.value)); setCalculated(false) }}
-              className="absolute w-full h-8 opacity-0 cursor-pointer z-10"
+              className="est-range"
             />
             <div
-              className="absolute w-5 h-5 bg-[#d4662a] border-2 border-white shadow-md rounded-full pointer-events-none"
-              style={{ left: `calc(${((size - rates.minSize) / (rates.maxSize - rates.minSize)) * 100}% - 10px)` }}
+              className="est-thumb"
+              style={{ left: `${fillPct}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-gray-400 mt-1">
+          <div className="est-limits">
             <span>{rates.minSize}</span>
             <span>{rates.maxSize} {rates.unit}</span>
           </div>
         </div>
       )}
 
-      <div className="mb-6">
-        <label className="font-semibold text-gray-700 block mb-2">Project Tier</label>
-        <div className="grid grid-cols-3 gap-3">
+      <div className="est-section">
+        <div className="est-label-row">
+          <span className="est-label">Project Tier</span>
+        </div>
+        <div className="est-tiers">
           {TIERS.map((t) => (
             <button
               key={t.key}
               onClick={() => { setTier(t.key); setCalculated(false) }}
-              className={`py-3 text-center border-2 transition-all text-sm font-semibold ${
-                tier === t.key
-                  ? 'border-[#d4662a] bg-orange-50 text-[#d4662a]'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
-              }`}
+              className={`est-tier${tier === t.key ? ' est-active' : ''}`}
             >
               {t.label}
             </button>
@@ -96,34 +95,25 @@ export default function ServiceEstimator({ defaultType }: { defaultType: string 
       </div>
 
       {!calculated ? (
-        <button
-          onClick={calculate}
-          className="w-full bg-[#d4662a] hover:bg-[#b85521] text-white font-bold py-3 transition-colors"
-        >
+        <button onClick={calculate} className="svc-submit">
           Calculate Estimate
         </button>
       ) : (
-        <div>
-          <div className="bg-green-50 border border-green-200 p-6 text-center mb-4">
-            <p className="text-green-700/60 text-sm font-medium mb-1 uppercase tracking-wide">Estimated Cost</p>
-            <p className="text-3xl font-extrabold text-green-700">
+        <>
+          <div className="est-result">
+            <div className="est-result-label">Estimated Cost</div>
+            <div className="est-result-price">
               ${low.toLocaleString()} &ndash; ${high.toLocaleString()}
-            </p>
-            <p className="text-xs text-green-600/50 mt-2">Based on Lane County, OR rates</p>
+            </div>
+            <div className="est-result-sub">Based on Lane County, OR rates</div>
           </div>
-          <Link
-            href="/contact"
-            className="block w-full bg-[#d4662a] hover:bg-[#b85521] text-white font-bold py-3 text-center transition-colors"
-          >
+          <Link href="/demo/contact" className="est-quote-link">
             Get an Exact Quote
           </Link>
-          <button
-            onClick={() => setCalculated(false)}
-            className="w-full mt-2 text-sm text-gray-400 hover:text-gray-600 py-2"
-          >
+          <button onClick={() => setCalculated(false)} className="est-adjust">
             Adjust estimate
           </button>
-        </div>
+        </>
       )}
     </div>
   )

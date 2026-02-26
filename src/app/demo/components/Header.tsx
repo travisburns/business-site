@@ -21,17 +21,23 @@ export default function Header({ onOpenEstimator }: HeaderProps) {
         <div className="header-content">
           <div className="logo">
             <h1>
-              <Link href="/">Halleman Construction <span>LLC</span></Link>
+              <Link href="/demo">
+                <span className="logo-diamond">◆</span>
+                <span>
+                  Halleman Construction
+                  <span>LLC</span>
+                </span>
+              </Link>
             </h1>
           </div>
 
           <nav className="nav">
             <ul>
-              <li><Link href="/">Home</Link></li>
-              <li><Link href="/services">Services</Link></li>
-              <li><Link href="/gallery">Gallery</Link></li>
-              <li><Link href="/about">About</Link></li>
-              <li><Link href="/contact">Contact</Link></li>
+              <li><Link href="/demo">Home</Link></li>
+              <li><Link href="/demo/services">Services</Link></li>
+              <li><Link href="/demo/gallery">Gallery</Link></li>
+              <li><Link href="/demo/about">About</Link></li>
+              <li><Link href="/demo/contact">Contact</Link></li>
             </ul>
           </nav>
 
@@ -42,7 +48,7 @@ export default function Header({ onOpenEstimator }: HeaderProps) {
                 Get Free Estimate
               </button>
             ) : (
-              <Link href="/contact" className="btn-estimate">
+              <Link href="/demo/contact" className="btn-estimate">
                 Get Free Estimate
               </Link>
             )}
@@ -51,6 +57,7 @@ export default function Header({ onOpenEstimator }: HeaderProps) {
           <button
             className="mobile-menu-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
           >
             <span></span>
             <span></span>
@@ -62,17 +69,17 @@ export default function Header({ onOpenEstimator }: HeaderProps) {
           <div className="mobile-menu">
             <nav>
               <ul>
-                <li><Link href="/">Home</Link></li>
-                <li><Link href="/services">Services</Link></li>
-                <li><Link href="/gallery">Gallery</Link></li>
-                <li><Link href="/about">About</Link></li>
-                <li><Link href="/contact">Contact</Link></li>
+                <li><Link href="/demo">Home</Link></li>
+                <li><Link href="/demo/services">Services</Link></li>
+                <li><Link href="/demo/gallery">Gallery</Link></li>
+                <li><Link href="/demo/about">About</Link></li>
+                <li><Link href="/demo/contact">Contact</Link></li>
                 <li><a href="tel:5415254133" className="btn-phone">(541) 525-4133</a></li>
                 <li>
                   {onOpenEstimator ? (
                     <button onClick={handleEstimate} className="btn-estimate">Get Free Estimate</button>
                   ) : (
-                    <Link href="/contact" className="btn-estimate">Get Free Estimate</Link>
+                    <Link href="/demo/contact" className="btn-estimate">Get Free Estimate</Link>
                   )}
                 </li>
               </ul>
