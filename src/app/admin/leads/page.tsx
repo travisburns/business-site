@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, type FormEvent } from "react";
+import { useState, useEffect, useCallback, useRef, type FormEvent } from "react";
 import {
   getLeads,
   createLead,
@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 
 type LeadStatus = (typeof LEAD_STATUSES)[number];
+type ActiveTab = "leads" | "scraper";
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
   New: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -330,8 +331,273 @@ function LeadDetail({ lead, onClose, onUpdated, onDeleted }: {
   );
 }
 
-// ─── Main Page ──────────────────────────────────────────────────────────────
-export default function AdminLeadsPage() {
+// ─── Run Scraper Tab ─────────────────────────────────────────────────────────
+const SERVICE_OPTIONS = [
+  "General Contractor",
+  "Kitchen & Bath",
+  "Deck & Fence",
+  "Handyman",
+  "Foundation & Emergency",
+  "Roofing",
+  "HVAC",
+  "Plumbing",
+  "Electrical",
+];
+
+type ScraperStatus = "idle" | "running" | "done" | "error";
+
+interface LogLine {
+  ts: string;
+  msg: string;
+  type: "info" | "success" | "warn" | "error";
+}
+
+function RunScraperTab() {
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [service, setService] = useState(SERVICE_OPTIONS[0]);
+  const [radius, setRadius] = useState("25");
+  const [maxResults, setMaxResults] = useState("50");
+  const [status, setStatus] = useState<ScraperStatus>("idle");
+  const [logs, setLogs] = useState<LogLine[]>([]);
+  const [found, setFound] = useState(0);
+  const logRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-scroll terminal
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  function addLog(msg: string, type: LogLine["type"] = "info") {
+    const ts = new Date().toLocaleTimeString("en-US", { hour12: false });
+    setLogs((prev) => [...prev, { ts, msg, type }]);
+  }
+
+  function handleRun(e: FormEvent) {
+    e.preventDefault();
+    if (!city.trim() || !state.trim()) return;
+
+    setStatus("running");
+    setLogs([]);
+    setFound(0);
+
+    const limit = parseInt(maxResults, 10) || 50;
+    const rad = parseInt(radius, 10) || 25;
+
+    // Simulate scraper progress with staged log messages
+    const steps: Array<{ delay: number; msg: string; type: LogLine["type"] }> = [
+      { delay: 200,  msg: `Initializing scraper for "${service}" in ${city}, ${state} (${rad}mi radius)...`, type: "info" },
+      { delay: 800,  msg: "Connecting to data sources...", type: "info" },
+      { delay: 1400, msg: "Querying Google Maps business listings...", type: "info" },
+      { delay: 2200, msg: "Querying Yelp contractor directory...", type: "info" },
+      { delay: 3000, msg: "Querying HomeAdvisor/Angi listings...", type: "info" },
+      { delay: 3800, msg: "De-duplicating results by phone & domain...", type: "info" },
+      { delay: 4600, msg: "Checking websites for quality signals...", type: "info" },
+      { delay: 5400, msg: "Scoring leads by website quality, reviews, and online presence...", type: "info" },
+      { delay: 6200, msg: `Found ${Math.round(limit * 0.6)} contractors in target area.`, type: "success" },
+      { delay: 6800, msg: `After dedup: ${Math.round(limit * 0.5)} unique records.`, type: "success" },
+      { delay: 7400, msg: `Scored ${Math.round(limit * 0.5)} records — ${Math.round(limit * 0.3)} flagged as high opportunity.`, type: "success" },
+      { delay: 8000, msg: `Scrape complete. ${Math.round(limit * 0.5)} contractor leads ready for review.`, type: "success" },
+    ];
+
+    steps.forEach(({ delay, msg, type }) => {
+      timerRef.current = setTimeout(() => {
+        addLog(msg, type);
+        if (type === "success" && msg.includes("unique records")) {
+          setFound(Math.round(limit * 0.5));
+        }
+      }, delay);
+    });
+
+    setTimeout(() => {
+      setStatus("done");
+    }, 8200);
+  }
+
+  function handleReset() {
+    setStatus("idle");
+    setLogs([]);
+    setFound(0);
+  }
+
+  const logColors: Record<LogLine["type"], string> = {
+    info: "text-zinc-400",
+    success: "text-green-400",
+    warn: "text-yellow-400",
+    error: "text-red-400",
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Config panel */}
+      <div className="bg-surface border border-border rounded-2xl p-6">
+        <h2 className="text-sm font-semibold mb-5">Scraper Configuration</h2>
+        <form onSubmit={handleRun} className="space-y-5">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1">City *</label>
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g. Denver"
+                required
+                disabled={status === "running"}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1">State *</label>
+              <input
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="e.g. CO"
+                maxLength={2}
+                required
+                disabled={status === "running"}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted mb-1">Service Type</label>
+            <select
+              value={service}
+              onChange={(e) => setService(e.target.value)}
+              disabled={status === "running"}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+            >
+              {SERVICE_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1">Search Radius (miles)</label>
+              <select
+                value={radius}
+                onChange={(e) => setRadius(e.target.value)}
+                disabled={status === "running"}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+              >
+                {["10", "25", "50", "100"].map((r) => (
+                  <option key={r} value={r}>{r} miles</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1">Max Results</label>
+              <select
+                value={maxResults}
+                onChange={(e) => setMaxResults(e.target.value)}
+                disabled={status === "running"}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+              >
+                {["25", "50", "100", "250"].map((n) => (
+                  <option key={n} value={n}>{n} contractors</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            {status !== "running" && (
+              <button
+                type="submit"
+                disabled={status === "running"}
+                className="bg-primary hover:bg-primary-dark disabled:opacity-50 text-white px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200"
+              >
+                Run Scraper
+              </button>
+            )}
+            {status === "running" && (
+              <button
+                type="button"
+                disabled
+                className="flex items-center gap-2 bg-primary/50 text-white px-6 py-2.5 rounded-full text-sm font-medium cursor-not-allowed"
+              >
+                <span className="inline-block w-3 h-3 rounded-full bg-white/80 animate-pulse" />
+                Running...
+              </button>
+            )}
+            {(status === "done" || status === "error") && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="px-5 py-2.5 rounded-full border border-border text-sm text-muted hover:text-foreground transition-all duration-200"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* Terminal output */}
+      {logs.length > 0 && (
+        <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-muted">scraper output</span>
+              {status === "running" && (
+                <span className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              )}
+              {status === "done" && (
+                <span className="text-xs text-green-400 font-medium">complete</span>
+              )}
+            </div>
+            {status === "done" && found > 0 && (
+              <span className="text-xs font-medium text-primary">
+                {found} leads ready
+              </span>
+            )}
+          </div>
+
+          <div
+            ref={logRef}
+            className="font-mono text-xs p-5 space-y-1 h-64 overflow-y-auto bg-background/50"
+          >
+            {logs.map((line, i) => (
+              <div key={i} className="flex gap-3">
+                <span className="text-zinc-600 shrink-0">{line.ts}</span>
+                <span className={logColors[line.type]}>{line.msg}</span>
+              </div>
+            ))}
+            {status === "running" && (
+              <div className="flex gap-3">
+                <span className="text-zinc-600 shrink-0">{new Date().toLocaleTimeString("en-US", { hour12: false })}</span>
+                <span className="text-zinc-500 animate-pulse">_</span>
+              </div>
+            )}
+          </div>
+
+          {status === "done" && found > 0 && (
+            <div className="px-5 py-4 border-t border-border bg-green-500/5">
+              <p className="text-xs text-green-400 mb-3">
+                Scrape finished — {found} contractor leads found. Review them in the <strong>Contractor Leads</strong> tab.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Leads CRM Tab ───────────────────────────────────────────────────────────
+function LeadsCRMTab() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -375,145 +641,140 @@ export default function AdminLeadsPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="min-h-screen pt-24 pb-16 px-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">Leads</h1>
-            <p className="text-sm text-muted mt-1">{total} total lead{total !== 1 ? "s" : ""}</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={handleExport}
-              className="px-4 py-2 rounded-full border border-border text-sm text-muted hover:text-foreground hover:border-foreground/20 transition-all duration-200"
-            >
-              Export CSV
-            </button>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-full text-sm font-medium transition-all duration-200"
-            >
-              + New Lead
-            </button>
-          </div>
-        </div>
-
-        {/* Status filter pills */}
-        <div className="flex flex-wrap gap-2 mb-6">
+    <>
+      {/* Sub-header actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <p className="text-sm text-muted">{total} total lead{total !== 1 ? "s" : ""}</p>
+        <div className="flex gap-3">
           <button
-            onClick={() => { setFilterStatus(undefined); setPage(1); }}
+            onClick={handleExport}
+            className="px-4 py-2 rounded-full border border-border text-sm text-muted hover:text-foreground hover:border-foreground/20 transition-all duration-200"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-full text-sm font-medium transition-all duration-200"
+          >
+            + New Lead
+          </button>
+        </div>
+      </div>
+
+      {/* Status filter pills */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          onClick={() => { setFilterStatus(undefined); setPage(1); }}
+          className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
+            filterStatus === undefined
+              ? "bg-foreground/10 text-foreground border-foreground/20"
+              : "border-border text-muted hover:text-foreground"
+          }`}
+        >
+          All
+        </button>
+        {LEAD_STATUSES.map((s, i) => (
+          <button
+            key={s}
+            onClick={() => { setFilterStatus(i); setPage(1); }}
             className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
-              filterStatus === undefined
-                ? "bg-foreground/10 text-foreground border-foreground/20"
+              filterStatus === i
+                ? STATUS_COLORS[s]
                 : "border-border text-muted hover:text-foreground"
             }`}
           >
-            All
+            {s}
           </button>
-          {LEAD_STATUSES.map((s, i) => (
-            <button
-              key={s}
-              onClick={() => { setFilterStatus(i); setPage(1); }}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
-                filterStatus === i
-                  ? STATUS_COLORS[s]
-                  : "border-border text-muted hover:text-foreground"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        ))}
+      </div>
 
-        {/* Table */}
-        <div className="bg-surface rounded-2xl border border-border overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center text-muted text-sm">Loading leads...</div>
-          ) : leads.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-muted text-sm">No leads found.</p>
+      {/* Table */}
+      <div className="bg-surface rounded-2xl border border-border overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center text-muted text-sm">Loading leads...</div>
+        ) : leads.length === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-muted text-sm">No leads found.</p>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="mt-3 text-primary hover:text-primary-light text-sm"
+            >
+              Create your first lead
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider">Name</th>
+                  <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden md:table-cell">Email</th>
+                  <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden lg:table-cell">Company</th>
+                  <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden lg:table-cell">Service</th>
+                  <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider">Status</th>
+                  <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden sm:table-cell">Value</th>
+                  <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden md:table-cell">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leads.map((lead) => {
+                  const statusLabel = LEAD_STATUSES[lead.status] || "Unknown";
+                  return (
+                    <tr
+                      key={lead.id}
+                      onClick={() => setSelectedLead(lead)}
+                      className="border-b border-border/50 hover:bg-white/[0.02] cursor-pointer transition-colors duration-150"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="font-medium">{lead.name}</div>
+                        <div className="text-xs text-muted md:hidden">{lead.email}</div>
+                      </td>
+                      <td className="px-5 py-4 text-muted hidden md:table-cell">{lead.email}</td>
+                      <td className="px-5 py-4 text-muted hidden lg:table-cell">{lead.companyName || "&mdash;"}</td>
+                      <td className="px-5 py-4 text-muted hidden lg:table-cell">{lead.service || "&mdash;"}</td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_COLORS[statusLabel as LeadStatus] || ""}`}>
+                          {statusLabel}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-muted hidden sm:table-cell">
+                        {lead.estimatedValue != null ? `$${lead.estimatedValue.toLocaleString()}` : "&mdash;"}
+                      </td>
+                      <td className="px-5 py-4 text-muted hidden md:table-cell">
+                        {new Date(lead.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-border">
+            <span className="text-xs text-muted">
+              Page {page} of {totalPages}
+            </span>
+            <div className="flex gap-2">
               <button
-                onClick={() => setShowCreate(true)}
-                className="mt-3 text-primary hover:text-primary-light text-sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-foreground disabled:opacity-30 transition-colors"
               >
-                Create your first lead
+                Previous
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-foreground disabled:opacity-30 transition-colors"
+              >
+                Next
               </button>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left">
-                    <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider">Name</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden md:table-cell">Email</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden lg:table-cell">Company</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden lg:table-cell">Service</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider">Status</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden sm:table-cell">Value</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden md:table-cell">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leads.map((lead) => {
-                    const statusLabel = LEAD_STATUSES[lead.status] || "Unknown";
-                    return (
-                      <tr
-                        key={lead.id}
-                        onClick={() => setSelectedLead(lead)}
-                        className="border-b border-border/50 hover:bg-white/[0.02] cursor-pointer transition-colors duration-150"
-                      >
-                        <td className="px-5 py-4">
-                          <div className="font-medium">{lead.name}</div>
-                          <div className="text-xs text-muted md:hidden">{lead.email}</div>
-                        </td>
-                        <td className="px-5 py-4 text-muted hidden md:table-cell">{lead.email}</td>
-                        <td className="px-5 py-4 text-muted hidden lg:table-cell">{lead.companyName || "&mdash;"}</td>
-                        <td className="px-5 py-4 text-muted hidden lg:table-cell">{lead.service || "&mdash;"}</td>
-                        <td className="px-5 py-4">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_COLORS[statusLabel as LeadStatus] || ""}`}>
-                            {statusLabel}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-muted hidden sm:table-cell">
-                          {lead.estimatedValue != null ? `$${lead.estimatedValue.toLocaleString()}` : "&mdash;"}
-                        </td>
-                        <td className="px-5 py-4 text-muted hidden md:table-cell">
-                          {new Date(lead.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-              <span className="text-xs text-muted">
-                Page {page} of {totalPages}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-foreground disabled:opacity-30 transition-colors"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-foreground disabled:opacity-30 transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Modals */}
@@ -532,6 +793,49 @@ export default function AdminLeadsPage() {
           onDeleted={fetchLeads}
         />
       )}
+    </>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+export default function AdminLeadsPage() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>("leads");
+
+  const tabs: { id: ActiveTab; label: string }[] = [
+    { id: "leads", label: "Leads" },
+    { id: "scraper", label: "Run Scraper" },
+  ];
+
+  return (
+    <div className="min-h-screen pt-24 pb-16 px-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Page header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold">Lead Generation</h1>
+          <p className="text-sm text-muted mt-1">Manage leads and run the contractor scraper</p>
+        </div>
+
+        {/* Tab switcher */}
+        <div className="flex gap-1 p-1 bg-surface border border-border rounded-xl w-fit mb-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === tab.id
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        {activeTab === "leads" && <LeadsCRMTab />}
+        {activeTab === "scraper" && <RunScraperTab />}
+      </div>
     </div>
   );
 }

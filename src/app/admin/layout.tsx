@@ -20,7 +20,7 @@ export function useAuth() {
 // ── Sidebar nav items ────────────────────────────────
 const nav = [
   { href: "/admin/dashboard", label: "Dashboard" },
-  { href: "/admin/leads", label: "Leads" },
+  { href: "/admin/leads", label: "Lead Generation" },
   { href: "/admin/contacts", label: "Contacts" },
   { href: "/admin/audits", label: "Audits" },
    { href: "/admin/prospects", label: "Prospects" },
