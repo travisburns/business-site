@@ -8,9 +8,14 @@ import {
   deleteLead,
   exportLeads,
   submitOnboarding,
-  createProspect,
+  startScrapingSession,
+  getScrapingProgress,
+  getScrapedLeads,
+  importScrapedLead,
   LEAD_STATUSES,
   type Lead,
+  type ScrapedLead,
+  type ScrapingProgress,
 } from "@/lib/api";
 import Link from "next/link";
 
@@ -25,11 +30,11 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
   Lost: "bg-red-500/10 text-red-400 border-red-500/20",
 };
 
-// ─── Contractor Lead type (scraped result) ───────────────────────────────────
+// ─── Contractor Lead type (display model, mapped from ScrapedLead) ──────────
 interface ContractorLead {
   id: string;
+  rawId: number; // DB id used for importScrapedLead
   company: string;
-  owner?: string;
   city: string;
   state: string;
   service: string;
@@ -38,12 +43,36 @@ interface ContractorLead {
   website?: string;
   hasWebsite: boolean;
   websiteGrade: "A" | "B" | "C" | "D" | "F" | "None";
-  rankingOnGoogle: boolean;
-  reviewCount: number;
   avgRating: number;
-  leadGenMethod: string;
-  opportunityScore: number; // 0–100
+  opportunityScore: number; // 0–100 derived from conversionProbability
   addedToProspects: boolean;
+}
+
+function mapScrapedLead(lead: ScrapedLead): ContractorLead {
+  const score = Math.round((lead.conversionProbability ?? 0) * 100);
+  const grade = !lead.website
+    ? "None"
+    : score >= 75 ? "A"
+    : score >= 55 ? "B"
+    : score >= 35 ? "C"
+    : score >= 20 ? "D"
+    : "F";
+  return {
+    id: String(lead.id),
+    rawId: lead.id,
+    company: lead.businessName,
+    city: lead.city ?? "",
+    state: lead.state ?? "",
+    service: lead.categories || lead.industry || "General",
+    phone: lead.phone || undefined,
+    email: lead.email,
+    website: lead.website,
+    hasWebsite: !!lead.website,
+    websiteGrade: grade,
+    avgRating: lead.rating ?? 0,
+    opportunityScore: score,
+    addedToProspects: lead.isManaged ?? false,
+  };
 }
 
 const GRADE_COLORS: Record<ContractorLead["websiteGrade"], string> = {
@@ -120,18 +149,6 @@ function generateMockLeads(city: string, state: string, service: string, count: 
 }
 
 // ─── Run Scraper Tab ──────────────────────────────────────────────────────────
-const SERVICE_OPTIONS = [
-  "General Contractor",
-  "Kitchen & Bath",
-  "Deck & Fence",
-  "Handyman",
-  "Foundation & Emergency",
-  "Roofing",
-  "HVAC",
-  "Plumbing",
-  "Electrical",
-];
-
 type ScraperStatus = "idle" | "running" | "done" | "error";
 
 interface LogLine {
@@ -140,31 +157,24 @@ interface LogLine {
   type: "info" | "success" | "warn" | "error";
 }
 
-interface ScraperConfig {
-  city: string;
-  state: string;
-  service: string;
-  maxResults: number;
-}
-
-function RunScraperTab({ onScrapeDone }: { onScrapeDone: (results: ContractorLead[], config: ScraperConfig) => void }) {
+function RunScraperTab({ onScrapeDone }: { onScrapeDone: (results: ScrapedLead[]) => void }) {
+  const [niche, setNiche] = useState("contractors");
   const [city, setCity] = useState("");
   const [stateVal, setStateVal] = useState("");
-  const [service, setService] = useState(SERVICE_OPTIONS[0]);
-  const [radius, setRadius] = useState("25");
-  const [maxResults, setMaxResults] = useState("50");
+  const [targetCount, setTargetCount] = useState(50);
+  const [sessionName, setSessionName] = useState("");
   const [status, setStatus] = useState<ScraperStatus>("idle");
   const [logs, setLogs] = useState<LogLine[]>([]);
-  const [found, setFound] = useState(0);
+  const [progress, setProgress] = useState<ScrapingProgress | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
 
   useEffect(() => {
-    return () => timers.current.forEach(clearTimeout);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
   function addLog(msg: string, type: LogLine["type"] = "info") {
@@ -172,54 +182,81 @@ function RunScraperTab({ onScrapeDone }: { onScrapeDone: (results: ContractorLea
     setLogs((prev) => [...prev, { ts, msg, type }]);
   }
 
-  function handleRun(e: FormEvent) {
+  async function handleRun(e: FormEvent) {
     e.preventDefault();
-    if (!city.trim() || !stateVal.trim()) return;
+    if (!city.trim() || !stateVal.trim() || !niche.trim()) return;
 
+    if (pollRef.current) clearInterval(pollRef.current);
     setStatus("running");
     setLogs([]);
-    setFound(0);
-    timers.current.forEach(clearTimeout);
-    timers.current = [];
+    setProgress(null);
 
-    const limit = parseInt(maxResults, 10) || 50;
-    const rad = parseInt(radius, 10) || 25;
-    const resultCount = Math.round(limit * 0.5 + Math.random() * limit * 0.3);
+    const location = `${city.trim()}, ${stateVal.trim()}`;
+    addLog(`Starting scraper — "${niche}" in ${location}`, "info");
+    addLog(`Target: ${targetCount} leads`, "info");
 
-    const steps: Array<{ delay: number; msg: string; type: LogLine["type"] }> = [
-      { delay: 200,  msg: `Initializing scraper — "${service}" in ${city}, ${stateVal} (${rad}mi radius)`, type: "info" },
-      { delay: 900,  msg: "Connecting to data sources...", type: "info" },
-      { delay: 1600, msg: "Querying Google Maps business listings...", type: "info" },
-      { delay: 2400, msg: "Querying Yelp contractor directory...", type: "info" },
-      { delay: 3100, msg: "Querying HomeAdvisor/Angi listings...", type: "info" },
-      { delay: 3900, msg: "De-duplicating by phone & domain...", type: "info" },
-      { delay: 4700, msg: "Fetching website presence for each result...", type: "info" },
-      { delay: 5500, msg: "Checking Google rankings & organic visibility...", type: "info" },
-      { delay: 6300, msg: "Scoring opportunity by website quality, reviews & lead gen method...", type: "info" },
-      { delay: 7100, msg: `Found ${Math.round(limit * 0.85)} raw listings.`, type: "success" },
-      { delay: 7700, msg: `After dedup: ${resultCount} unique contractors.`, type: "success" },
-      { delay: 8300, msg: `${Math.round(resultCount * 0.4)} flagged as high opportunity (score ≥ 70).`, type: "success" },
-      { delay: 8900, msg: `Done. ${resultCount} contractor leads ready for review.`, type: "success" },
-    ];
+    try {
+      const result = await startScrapingSession({
+        Niche: niche,
+        Location: location,
+        TargetCount: targetCount,
+        SessionName: sessionName || `${niche} — ${location}`,
+        DelayMin: 4,
+        DelayMax: 8,
+      });
 
-    steps.forEach(({ delay, msg, type }) => {
-      const t = setTimeout(() => addLog(msg, type), delay);
-      timers.current.push(t);
-    });
+      const sid = result.sessionId;
+      addLog(`Session ${sid} started — Python scraper running`, "success");
 
-    const doneTimer = setTimeout(() => {
-      const results = generateMockLeads(city, stateVal, service, resultCount);
-      setFound(resultCount);
-      setStatus("done");
-      onScrapeDone(results, { city, state: stateVal, service, maxResults: limit });
-    }, 9100);
-    timers.current.push(doneTimer);
+      // Poll every 3s for real progress from the backend
+      pollRef.current = setInterval(async () => {
+        try {
+          const prog = await getScrapingProgress(sid);
+          setProgress(prog);
+
+          if (prog.currentAction) addLog(prog.currentAction, "info");
+
+          const done = prog.isComplete === true || prog.status === 2;
+          if (done) {
+            clearInterval(pollRef.current!);
+            addLog(
+              `Complete — ${prog.leadsFound} leads found, ${prog.duplicatesSkipped} duplicates skipped`,
+              "success"
+            );
+            setStatus("done");
+
+            // Fetch the actual scraped leads
+            const scraped = await getScrapedLeads("YellowPages", targetCount);
+            const items: ScrapedLead[] = scraped?.items ?? (Array.isArray(scraped) ? scraped as unknown as ScrapedLead[] : []);
+            onScrapeDone(items);
+          }
+
+          if (prog.status === 3) {
+            clearInterval(pollRef.current!);
+            addLog("Scraper session failed on the backend", "error");
+            setStatus("error");
+          }
+        } catch {
+          // transient poll error — keep trying
+        }
+      }, 3000);
+    } catch (err) {
+      addLog(`Error: ${err instanceof Error ? err.message : "Unknown error"}`, "error");
+      setStatus("error");
+    }
+  }
+
+  function handleStop() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    setStatus("idle");
+    addLog("Scraper stopped by user", "warn");
   }
 
   function handleReset() {
+    if (pollRef.current) clearInterval(pollRef.current);
     setStatus("idle");
     setLogs([]);
-    setFound(0);
+    setProgress(null);
   }
 
   const logColors: Record<LogLine["type"], string> = {
@@ -234,6 +271,13 @@ function RunScraperTab({ onScrapeDone }: { onScrapeDone: (results: ContractorLea
       <div className="bg-surface border border-border rounded-2xl p-6">
         <h2 className="text-sm font-semibold mb-5">Scraper Configuration</h2>
         <form onSubmit={handleRun} className="space-y-5">
+          <div>
+            <label className="block text-xs font-medium text-muted mb-1">Business Niche *</label>
+            <input value={niche} onChange={(e) => setNiche(e.target.value)}
+              placeholder="e.g. contractors, roofers, plumbers, dentists"
+              required disabled={status === "running"}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50" />
+          </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-muted mb-1">City *</label>
@@ -246,27 +290,21 @@ function RunScraperTab({ onScrapeDone }: { onScrapeDone: (results: ContractorLea
                 className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50" />
             </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-muted mb-1">Service Type</label>
-            <select value={service} onChange={(e) => setService(e.target.value)} disabled={status === "running"}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50">
-              {SERVICE_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-muted mb-1">Search Radius</label>
-              <select value={radius} onChange={(e) => setRadius(e.target.value)} disabled={status === "running"}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50">
-                {["10", "25", "50", "100"].map((r) => <option key={r} value={r}>{r} miles</option>)}
-              </select>
+              <label className="block text-xs font-medium text-muted mb-1">Target Count: {targetCount}</label>
+              <input type="range" min={10} max={250} step={5} value={targetCount}
+                onChange={(e) => setTargetCount(parseInt(e.target.value))}
+                disabled={status === "running"}
+                className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer disabled:opacity-50" />
+              <div className="flex justify-between text-xs text-muted mt-1"><span>10</span><span>250</span></div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted mb-1">Max Results</label>
-              <select value={maxResults} onChange={(e) => setMaxResults(e.target.value)} disabled={status === "running"}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50">
-                {["25", "50", "100", "250"].map((n) => <option key={n} value={n}>{n} contractors</option>)}
-              </select>
+              <label className="block text-xs font-medium text-muted mb-1">Session Name</label>
+              <input value={sessionName} onChange={(e) => setSessionName(e.target.value)}
+                placeholder="Optional label"
+                disabled={status === "running"}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50" />
             </div>
           </div>
           <div className="flex gap-3 pt-1">
@@ -276,11 +314,17 @@ function RunScraperTab({ onScrapeDone }: { onScrapeDone: (results: ContractorLea
                 Run Scraper
               </button>
             ) : (
-              <button type="button" disabled
-                className="flex items-center gap-2 bg-primary/50 text-white px-6 py-2.5 rounded-full text-sm font-medium cursor-not-allowed">
-                <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse" />
-                Running...
-              </button>
+              <>
+                <button type="button" disabled
+                  className="flex items-center gap-2 bg-primary/50 text-white px-6 py-2.5 rounded-full text-sm font-medium cursor-not-allowed">
+                  <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse" />
+                  Running...
+                </button>
+                <button type="button" onClick={handleStop}
+                  className="px-5 py-2.5 rounded-full border border-red-500/40 text-red-400 text-sm hover:bg-red-500/10 transition-all duration-200">
+                  Stop
+                </button>
+              </>
             )}
             {(status === "done" || status === "error") && (
               <button type="button" onClick={handleReset}
@@ -299,11 +343,31 @@ function RunScraperTab({ onScrapeDone }: { onScrapeDone: (results: ContractorLea
               <span className="text-xs font-mono text-muted">output</span>
               {status === "running" && <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
               {status === "done" && <span className="text-xs text-green-400 font-medium">complete</span>}
+              {status === "error" && <span className="text-xs text-red-400 font-medium">error</span>}
             </div>
-            {status === "done" && found > 0 && (
-              <span className="text-xs font-medium text-primary">{found} leads ready — switch to Contractor Leads tab</span>
+            {progress && status === "running" && (
+              <span className="text-xs text-muted">
+                {progress.leadsFound} found · {progress.duplicatesSkipped} dupes skipped
+                {progress.totalPages > 0 && ` · page ${progress.currentPage}/${progress.totalPages}`}
+              </span>
+            )}
+            {status === "done" && progress && (
+              <span className="text-xs font-medium text-primary">
+                {progress.leadsFound} leads ready — switch to Contractor Leads tab
+              </span>
             )}
           </div>
+          {/* Progress bar */}
+          {status === "running" && progress && progress.totalPages > 0 && (
+            <div className="px-5 py-2 border-b border-border/50">
+              <div className="w-full bg-border rounded-full h-1.5">
+                <div
+                  className="bg-primary h-1.5 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(progress.progressPercentage, 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
           <div ref={logRef} className="font-mono text-xs p-5 space-y-1 h-64 overflow-y-auto bg-background/50">
             {logs.map((line, i) => (
               <div key={i} className="flex gap-3">
@@ -403,11 +467,10 @@ function ContractorLeadsTab({ leads, onAddToProspects }: {
               <tr className="border-b border-border text-left">
                 <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider">Company</th>
                 <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden md:table-cell">Location</th>
+                <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden sm:table-cell">Category</th>
                 <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider">Website</th>
-                <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden lg:table-cell">Google</th>
-                <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden sm:table-cell">Reviews</th>
-                <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden lg:table-cell">Lead Gen</th>
-                <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider">Score</th>
+                <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider hidden sm:table-cell">Rating</th>
+                <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider">ML Score</th>
                 <th className="px-5 py-3 text-xs font-medium text-muted uppercase tracking-wider"></th>
               </tr>
             </thead>
@@ -417,27 +480,37 @@ function ContractorLeadsTab({ leads, onAddToProspects }: {
                   <td className="px-5 py-4">
                     <div className="font-medium">{lead.company}</div>
                     {lead.phone && <div className="text-xs text-muted mt-0.5">{lead.phone}</div>}
+                    {lead.email && <div className="text-xs text-muted">{lead.email}</div>}
                   </td>
-                  <td className="px-5 py-4 text-muted text-xs hidden md:table-cell">{lead.city}, {lead.state}</td>
+                  <td className="px-5 py-4 text-muted text-xs hidden md:table-cell">
+                    {[lead.city, lead.state].filter(Boolean).join(", ") || "—"}
+                  </td>
+                  <td className="px-5 py-4 text-muted text-xs hidden sm:table-cell">{lead.service || "—"}</td>
                   <td className="px-5 py-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${GRADE_COLORS[lead.websiteGrade]}`}>
-                      {lead.websiteGrade === "None" ? "No site" : `Grade ${lead.websiteGrade}`}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 hidden lg:table-cell">
-                    {lead.rankingOnGoogle
-                      ? <span className="text-xs text-green-400">Ranking</span>
-                      : <span className="text-xs text-red-400">Not ranking</span>}
+                    {lead.website ? (
+                      <a href={lead.website} target="_blank" rel="noopener noreferrer"
+                        className="text-xs text-primary hover:text-primary-light truncate max-w-[120px] block">
+                        {lead.website.replace(/^https?:\/\//, "")}
+                      </a>
+                    ) : (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${GRADE_COLORS["None"]}`}>
+                        No site
+                      </span>
+                    )}
                   </td>
                   <td className="px-5 py-4 text-muted text-xs hidden sm:table-cell">
-                    {lead.reviewCount} reviews &middot; {lead.avgRating}★
+                    {lead.avgRating > 0 ? `${lead.avgRating}★` : "—"}
                   </td>
-                  <td className="px-5 py-4 text-xs text-muted hidden lg:table-cell">{lead.leadGenMethod}</td>
                   <td className="px-5 py-4">
-                    <span className={`text-sm font-bold ${scoreColor(lead.opportunityScore)}`}>
-                      {lead.opportunityScore}
-                    </span>
-                    <span className="text-xs text-muted">/100</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 bg-border rounded-full h-1.5">
+                        <div className={`h-1.5 rounded-full ${lead.opportunityScore >= 70 ? "bg-green-400" : lead.opportunityScore >= 40 ? "bg-yellow-400" : "bg-red-400"}`}
+                          style={{ width: `${lead.opportunityScore}%` }} />
+                      </div>
+                      <span className={`text-sm font-bold ${scoreColor(lead.opportunityScore)}`}>
+                        {lead.opportunityScore}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-5 py-4">
                     {lead.addedToProspects ? (
@@ -822,37 +895,19 @@ export default function AdminLeadsPage() {
   const [contractorLeads, setContractorLeads] = useState<ContractorLead[]>([]);
 
   async function handleAddToProspects(lead: ContractorLead) {
-    // Map website grade to websiteStatus index: None→0, F→1, D→2, C→3, B→4, A→4
-    const gradeToStatus: Record<ContractorLead["websiteGrade"], number> = {
-      None: 0, F: 1, D: 2, C: 3, B: 4, A: 4,
-    };
     try {
-      await createProspect({
-        name: lead.owner || lead.company,
-        companyName: lead.company,
-        city: lead.city,
-        phone: lead.phone,
-        email: lead.email,
-        websiteUrl: lead.website,
-        websiteStatus: gradeToStatus[lead.websiteGrade],
-        serviceType: 0,
-        isMobileFriendly: lead.websiteGrade === "A" || lead.websiteGrade === "B",
-        hasLeadCapture: lead.websiteGrade === "A",
-        currentLeadGen: lead.leadGenMethod === "None" ? 1 : 0,
-        googleRankingPage: lead.rankingOnGoogle ? 1 : undefined,
-        source: "scraper",
-        notes: `Scraped — Opportunity score: ${lead.opportunityScore}/100. Reviews: ${lead.reviewCount} (${lead.avgRating}★). Lead gen: ${lead.leadGenMethod}.`,
-      });
+      // Import the scraped lead into the Pipeline CRM via the backend
+      await importScrapedLead(lead.rawId);
       setContractorLeads((prev) =>
         prev.map((l) => l.id === lead.id ? { ...l, addedToProspects: true } : l)
       );
     } catch {
-      alert("Failed to add to prospects");
+      alert("Failed to import lead");
     }
   }
 
-  function handleScrapeDone(results: ContractorLead[], _config: ScraperConfig) {
-    setContractorLeads(results);
+  function handleScrapeDone(results: ScrapedLead[]) {
+    setContractorLeads(results.map(mapScrapedLead));
     setTimeout(() => setActiveTab("contractor-leads"), 600);
   }
 
