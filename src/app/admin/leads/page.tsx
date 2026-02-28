@@ -8,15 +8,17 @@ import {
   deleteLead,
   exportLeads,
   submitOnboarding,
+  LEAD_STATUSES,
+  type Lead,
+} from "@/lib/api";
+import {
   startScrapingSession,
   getScrapingProgress,
   getScrapedLeads,
   importScrapedLead,
-  LEAD_STATUSES,
-  type Lead,
   type ScrapedLead,
   type ScrapingProgress,
-} from "@/lib/api";
+} from "@/lib/scraperApi";
 import Link from "next/link";
 
 type LeadStatus = (typeof LEAD_STATUSES)[number];
