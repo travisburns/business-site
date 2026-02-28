@@ -91,63 +91,6 @@ function scoreColor(score: number) {
   return "text-red-400";
 }
 
-// ─── Mock scraped results generator ─────────────────────────────────────────
-function generateMockLeads(city: string, state: string, service: string, count: number): ContractorLead[] {
-  const companies = [
-    "Apex", "Summit", "Eagle", "Patriot", "Blue Ridge", "Keystone", "Iron", "Atlas",
-    "Premier", "Elite", "First Choice", "Pro", "Master", "Royal", "Liberty", "Heritage",
-    "Pinnacle", "Titan", "Frontier", "Valor",
-  ];
-  const suffixes = ["Contracting", "Construction", "Services", "Group", "Solutions", "Builders", "Works", "Co"];
-  const grades: ContractorLead["websiteGrade"][] = ["A", "B", "C", "D", "F", "None"];
-  const methods = ["Word of Mouth", "HomeAdvisor/Angi", "Facebook Ads", "None", "Google Ads", "Unknown"];
-
-  return Array.from({ length: count }, (_, i) => {
-    const hasWebsite = Math.random() > 0.25;
-    const grade = hasWebsite
-      ? grades[Math.floor(Math.random() * 5)]
-      : "None";
-    const rankingOnGoogle = hasWebsite && Math.random() > 0.55;
-    const reviewCount = Math.floor(Math.random() * 120);
-    const avgRating = Math.round((3.2 + Math.random() * 1.8) * 10) / 10;
-    const leadGenMethod = methods[Math.floor(Math.random() * methods.length)];
-
-    // Score: penalize bad/no website, no ranking, no reviews, paid lead gen dependency
-    let score = 50;
-    if (!hasWebsite) score -= 25;
-    else if (grade === "F") score -= 20;
-    else if (grade === "D") score -= 12;
-    else if (grade === "C") score -= 4;
-    else if (grade === "A") score += 15;
-    else if (grade === "B") score += 8;
-    if (!rankingOnGoogle) score -= 15;
-    if (reviewCount < 5) score -= 10;
-    if (reviewCount > 50) score += 10;
-    if (leadGenMethod === "HomeAdvisor/Angi") score += 8;
-    if (leadGenMethod === "None") score += 20;
-    score = Math.max(5, Math.min(98, score + Math.floor(Math.random() * 20 - 10)));
-
-    return {
-      id: `cl-${i}`,
-      company: `${companies[i % companies.length]} ${suffixes[i % suffixes.length]}`,
-      city,
-      state,
-      service,
-      phone: `(${Math.floor(Math.random() * 900 + 100)}) ${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 9000 + 1000)}`,
-      email: Math.random() > 0.5 ? `info@${companies[i % companies.length].toLowerCase()}${suffixes[i % suffixes.length].toLowerCase().replace(/\s/g, "")}.com` : undefined,
-      website: hasWebsite ? `https://www.${companies[i % companies.length].toLowerCase()}${suffixes[i % suffixes.length].toLowerCase().replace(/\s/g, "")}.com` : undefined,
-      hasWebsite,
-      websiteGrade: grade,
-      rankingOnGoogle,
-      reviewCount,
-      avgRating,
-      leadGenMethod,
-      opportunityScore: score,
-      addedToProspects: false,
-    };
-  });
-}
-
 // ─── Run Scraper Tab ──────────────────────────────────────────────────────────
 type ScraperStatus = "idle" | "running" | "done" | "error";
 
